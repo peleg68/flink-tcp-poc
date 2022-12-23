@@ -6,6 +6,7 @@ import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunctio
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -97,6 +98,9 @@ public class TcpSource extends RichParallelSourceFunction<String> {
 
         try {
             socket = new Socket(server, port);
+        } catch (ConnectException e) {
+            log.error("Connection refused by " + server + ":" + port);
+            throw e;
         } catch (IOException e) {
             log.error("Error connecting to " + server + ":" + port, e);
             throw e;
