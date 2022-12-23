@@ -3,10 +3,12 @@ import logging
 import socket
 import random
 
-args = ' '.join(sys.argv[1:])
+logging.basicConfig(level=logging.INFO)
 
-HOST = 'localhost'
-PORT = args[0]
+args = sys.argv[1:]
+
+HOST = ''
+PORT = int(args[0])
 
 logging.info(f'Opening server on host {HOST} and port {PORT}.')
 
