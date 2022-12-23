@@ -1,8 +1,14 @@
+import sys
+import logging
 import socket
 import random
 
-HOST = ''  # Listen on all available interfaces
-PORT = 5050
+args = ' '.join(sys.argv[1:])
+
+HOST = 'localhost'
+PORT = args[0]
+
+logging.info(f'Opening server on host {HOST} and port {PORT}.')
 
 # Create a TCP socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -13,8 +19,12 @@ server_socket.bind((HOST, PORT))
 # Listen for incoming connections
 server_socket.listen()
 
+logging.info(f'Started listening on host {HOST} and port {PORT}.')
+
 # Accept a connection
 client_socket, client_address = server_socket.accept()
+
+logging.info(f'Accepted connection on address {client_address} and socket {client_socket}.')
 
 while True:
     # Generate a random number between 1 and 666
@@ -25,3 +35,5 @@ while True:
 
     # Wait for 1 second before sending the next random number
     time.sleep(1)
+
+logging.info(f'Finished')
