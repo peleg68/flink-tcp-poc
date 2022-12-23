@@ -50,6 +50,54 @@ You can try to test this POC yourself by following these steps:
    INFO:root:Accepted connection on address ('127.0.0.1', 62278).
    ```
    
+## Parallelism and Data Partitioning
+The `TcpSource` is written in a scalable manner such that the connections to the different servers will be split fairly between all of the Flink workers in the cluster.
+
+We can see this working by playing with the parallelism parameter. Currently, the parallelism is set to the amount of servers (4):
+```java
+env.setParallelism(servers.length);
+```
+This is because at a larger parallelism Flink will set up too much instances of the source operator which will not be allocated to any server.
+
+Because the parallelism is equal to the amount of servers, each instance will be allocated a single server:
+```
+16:55:01,991 INFO  io.peleg.TcpSource [] - Task index 3 out of 4 allocated servers 3 to 4
+16:55:01,991 INFO  io.peleg.TcpSource [] - Task index 1 out of 4 allocated servers 1 to 2
+16:55:01,991 INFO  io.peleg.TcpSource [] - Task index 0 out of 4 allocated servers 0 to 1
+16:55:01,991 INFO  io.peleg.TcpSource [] - Task index 2 out of 4 allocated servers 2 to 3
+```
+
+Let's try to set the parallelism to a number lower than the amount of servers:
+```java
+env.setParallelism(2);
+```
+Now when we run it this is how the servers are allocated:
+```
+16:47:24,670 INFO  io.peleg.TcpSource [] - Task index 1 out of 2 allocated servers 2 to 4
+16:47:24,670 INFO  io.peleg.TcpSource [] - Task index 0 out of 2 allocated servers 0 to 2
+```
+We can even try un-even allocation. Let's remove one of the servers to only connect to 3 servers:
+```java
+String[] servers = {
+       "localhost",
+       "localhost",
+       "localhost"
+};
+
+int[] ports = {
+       8001,
+       8002,
+       8003
+};
+```
+Now when we run it this is how the servers are allocated:
+```
+16:52:09,857 INFO  io.peleg.TcpSource [] - Task index 0 out of 2 allocated servers 0 to 2
+16:52:09,857 INFO  io.peleg.TcpSource [] - Task index 1 out of 2 allocated servers 2 to 3
+```
+
+To sum it up, as long as the parallelism is not higher than the amount of servers, your cluster resources will be used evenly.
+
 ## Fault-Tolerance
 We can try to shut down the one of the TCP servers and see the fault tolerance mechanism at work.
 
