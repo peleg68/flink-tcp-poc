@@ -33,9 +33,8 @@ public class TcpSource extends RichParallelSourceFunction<String> {
         int endIndex = Math.min((taskIndex + 1) * numServersPerTask, servers.length);
 
         if (startIndex >= servers.length) {
-            IllegalArgumentException e = new IllegalArgumentException("It is not possible to set parallelism to a higher value than the amount of servers. Try setting parallelism using `env.setParallelism(servers.length)`.");
-            log.error("Parallelism is too high", e);
-            throw e;
+            log.info("Parallelism is too high, task {} will be idle, no servers left to allocate. It is not recommended to set parallelism to a higher value than the amount of servers. Try setting parallelism using `env.setParallelism(servers.length)`.", taskIndex);
+            return;
         }
 
         log.info("Task index {} out of {} allocated servers {} to {}", taskIndex, numTasks, startIndex, endIndex);
