@@ -1,0 +1,13 @@
+target/
+*~
+.DS_Store
+pom.properties
+src/main/resources/mvn-build-counter.props
+src/main/resources/git-revision.properties
+.classpath
+.project
+.settings
+
+.idea/
+
+dependency-reduced-pom.xml
