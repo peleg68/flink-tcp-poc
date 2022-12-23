@@ -31,7 +31,7 @@ public class DataStreamJob {
         env.setParallelism(servers.length);
 
         env.addSource(new TcpSource(servers, ports))
-                .filter(s -> Integer.parseInt(s) % 3 == 0)
+                .filter(s -> Integer.parseInt(s) % 50 == 0)
                 .print();
 
         env.execute("tcp-poc");
