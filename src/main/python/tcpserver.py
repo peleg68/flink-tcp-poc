@@ -27,7 +27,7 @@ while True:
 
     while True:
         # Generate a random number between 1 and 666
-        num = str(random.randint(1, 666))
+        num = str(random.randint(1, 666)) + '\n'
 
         try:
             # Send the random number as a string to the client
