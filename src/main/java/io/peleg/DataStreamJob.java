@@ -26,17 +26,11 @@ public class DataStreamJob {
         ));
 
         String[] servers = {
-                "localhost",
-                "localhost",
-                "localhost",
                 "localhost"
         };
 
         int[] ports = {
-                8001,
-                8002,
-                8003,
-                8004
+                8001
         };
 
         env.setParallelism(servers.length);
