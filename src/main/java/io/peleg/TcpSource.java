@@ -43,7 +43,7 @@ public class TcpSource extends RichParallelSourceFunction<String> {
         log.info("Initialized sockets and readers for task index {}", taskIndex);
 
         while (running) {
-            readData(readers, sockets, ctx);
+            readData(readers, sockets, ctx, taskIndex);
         }
 
         // Close the connections to the servers
@@ -53,34 +53,34 @@ public class TcpSource extends RichParallelSourceFunction<String> {
         }
     }
 
-    private void readData(BufferedReader[] readers, Socket[] sockets, SourceContext<String> ctx) throws Exception {
+    private void readData(BufferedReader[] readers, Socket[] sockets, SourceContext<String> ctx, int taskIndex) throws Exception {
         // Read a line of data from each server
         for (int i = 0; i < readers.length; i++) {
-            log.debug("Trying to read from reader {}", i);
+            log.debug("Trying to read from reader {} on task {}", i, taskIndex);
 
             String line;
 
             try {
                 line = readers[i].readLine();
             } catch (IOException e) {
-                log.warn("Error reading from reader {}", i, e);
+                log.error("Error reading from reader {} on task {}", i, taskIndex, e);
                 line = null;
             }
 
             if (line == null) {
-                log.debug("Closing socket for broken connection with server {}", i);
+                log.debug("Closing socket for broken connection with server {} on task {}", i, taskIndex);
 
                 readers[i].close();
                 sockets[i].close();
 
-                log.debug("Closed socket successfully for broken connection with server {}", i);
+                log.debug("Closed socket successfully for broken connection with server {} on task {}", i, taskIndex);
 
-                log.info("Trying to reconnect to server {}", i);
+                log.info("Trying to reconnect to server {} on task {}", i, taskIndex);
 
                 sockets[i] = new Socket(servers[i], ports[i]);
                 readers[i] = new BufferedReader(new InputStreamReader(sockets[i].getInputStream()));
 
-                log.info("Initialized socket and reader for server {}", i);
+                log.info("Initialized socket and reader for server {} on task {}", i, taskIndex);
             } else {
                 // Emit the data as a stream
                 ctx.collect(line);
