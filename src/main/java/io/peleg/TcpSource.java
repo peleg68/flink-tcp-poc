@@ -67,11 +67,14 @@ public class TcpSource extends RichParallelSourceFunction<String> {
             try {
                 line = readers[i].readLine();
             } catch (IOException e) {
-                log.error("Error reading from reader {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port, e);
-                line = null;
+                log.error("Error reading from reader " + i + " on task " + taskIndex + ", Socket is" + address.getHostName() + ":" + port, e);
+                line = "";
             }
 
-            if (line == null) {
+            if (line == null || line == "") {
+                if (line == null)
+                    log.error("Error, got null reading from reader {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
+
                 log.debug("Closing socket for broken connection with server {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
 
                 readers[i].close();
@@ -79,12 +82,7 @@ public class TcpSource extends RichParallelSourceFunction<String> {
 
                 log.debug("Closed socket successfully for broken connection with server {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
 
-                log.info("Trying to reconnect to server {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
-
-                sockets[i] = new Socket(address, port);
-                readers[i] = new BufferedReader(new InputStreamReader(sockets[i].getInputStream()));
-
-                log.info("Initialized socket and reader for server {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
+                throw new IOException("There was an error in the connection with " + address.getHostName() + ":" + port);
             } else {
                 // Emit the data as a stream
                 ctx.collect(line);
