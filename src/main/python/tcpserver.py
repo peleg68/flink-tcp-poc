@@ -22,3 +22,6 @@ while True:
 
     # Send the random number as a string to the client
     client_socket.sendall(num.encode())
+
+    # Wait for 1 second before sending the next random number
+    time.sleep(1)
