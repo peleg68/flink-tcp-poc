@@ -43,7 +43,7 @@ public class TcpSource extends RichParallelSourceFunction<String> {
         log.info("Initialized sockets and readers for task index {}", taskIndex);
 
         while (running) {
-            readData(readers, ctx);
+            readData(readers, sockets, ctx);
         }
 
         // Close the connections to the servers
