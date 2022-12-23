@@ -6,6 +6,7 @@ import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunctio
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.Socket;
 
 @Slf4j
@@ -56,31 +57,34 @@ public class TcpSource extends RichParallelSourceFunction<String> {
     private void readData(BufferedReader[] readers, Socket[] sockets, SourceContext<String> ctx, int taskIndex) throws Exception {
         // Read a line of data from each server
         for (int i = 0; i < readers.length; i++) {
-            log.debug("Trying to read from reader {} on task {}", i, taskIndex);
+            InetAddress address = sockets[i].getInetAddress();
+            int port = sockets[i].getPort();
+
+            log.debug("Trying to read from reader {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
 
             String line;
 
             try {
                 line = readers[i].readLine();
             } catch (IOException e) {
-                log.error("Error reading from reader {} on task {}", i, taskIndex, e);
+                log.error("Error reading from reader {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port, e);
                 line = null;
             }
 
             if (line == null) {
-                log.debug("Closing socket for broken connection with server {} on task {}", i, taskIndex);
+                log.debug("Closing socket for broken connection with server {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
 
                 readers[i].close();
                 sockets[i].close();
 
-                log.debug("Closed socket successfully for broken connection with server {} on task {}", i, taskIndex);
+                log.debug("Closed socket successfully for broken connection with server {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
 
-                log.info("Trying to reconnect to server {} on task {}", i, taskIndex);
+                log.info("Trying to reconnect to server {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
 
-                sockets[i] = new Socket(servers[i], ports[i]);
+                sockets[i] = new Socket(address, port);
                 readers[i] = new BufferedReader(new InputStreamReader(sockets[i].getInputStream()));
 
-                log.info("Initialized socket and reader for server {} on task {}", i, taskIndex);
+                log.info("Initialized socket and reader for server {} on task {}, Socket is {}:{}", i, taskIndex, address.getHostName(), port);
             } else {
                 // Emit the data as a stream
                 ctx.collect(line);
