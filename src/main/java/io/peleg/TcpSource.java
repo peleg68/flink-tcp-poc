@@ -36,17 +36,34 @@ public class TcpSource extends RichParallelSourceFunction<String> {
         }
 
         while (running) {
-            // Read a line of data from each server
-            for (int i = 0; i < endIndex - startIndex; i++) {
-                String line = readers[i].readLine();
-                ctx.collect(line);
-            }
+            readData(readers, ctx);
         }
 
         // Close the connections to the servers
         for (int i = 0; i < endIndex - startIndex; i++) {
             readers[i].close();
             sockets[i].close();
+        }
+    }
+
+    private void readData(BufferedReader[] readers, SourceContext<String> ctx) throws Exception {
+        // Read a line of data from each server
+        for (int i = 0; i < readers.length; i++) {
+            try {
+                String line = readers[i].readLine();
+                if (line == null) {
+                    // Server connection was closed, try to reconnect
+                    Socket socket = new Socket(servers[i], ports[i]);
+                    readers[i] = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                } else {
+                    // Emit the data as a stream
+                    ctx.collect(line);
+                }
+            } catch (Exception e) {
+                // An error occurred, try to reconnect
+                Socket socket = new Socket(servers[i], ports[i]);
+                readers[i] = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            }
         }
     }
 
