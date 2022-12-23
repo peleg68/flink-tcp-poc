@@ -27,7 +27,7 @@ logging.info(f'Started listening on host {HOST} and port {PORT}.')
 # Accept a connection
 client_socket, client_address = server_socket.accept()
 
-logging.info(f'Accepted connection on address {client_address} and socket {client_socket}.')
+logging.info(f'Accepted connection on address {client_address}.')
 
 while True:
     # Generate a random number between 1 and 666
