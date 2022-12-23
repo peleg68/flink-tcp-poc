@@ -1,11 +1,14 @@
 package io.peleg;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
+@Slf4j
 public class TcpSource extends RichParallelSourceFunction<String> {
 
     private volatile boolean running = true;
@@ -27,6 +30,8 @@ public class TcpSource extends RichParallelSourceFunction<String> {
         int startIndex = taskIndex * numServersPerTask;
         int endIndex = Math.min((taskIndex + 1) * numServersPerTask, servers.length);
 
+        log.info("Task index {} out of {} allocated servers {} to {}", taskIndex, numTasks, startIndex, endIndex);
+
         // Connect to the servers and start reading data
         Socket[] sockets = new Socket[endIndex - startIndex];
         BufferedReader[] readers = new BufferedReader[endIndex - startIndex];
@@ -34,6 +39,8 @@ public class TcpSource extends RichParallelSourceFunction<String> {
             sockets[i - startIndex] = new Socket(servers[i], ports[i]);
             readers[i - startIndex] = new BufferedReader(new InputStreamReader(sockets[i - startIndex].getInputStream()));
         }
+
+        log.info("Initialized sockets and readers for task index {}", taskIndex);
 
         while (running) {
             readData(readers, ctx);
@@ -46,23 +53,37 @@ public class TcpSource extends RichParallelSourceFunction<String> {
         }
     }
 
-    private void readData(BufferedReader[] readers, SourceContext<String> ctx) throws Exception {
+    private void readData(BufferedReader[] readers, Socket[] sockets, SourceContext<String> ctx) throws Exception {
         // Read a line of data from each server
         for (int i = 0; i < readers.length; i++) {
+            log.debug("Trying to read from reader {}", i);
+
+            String line;
+
             try {
-                String line = readers[i].readLine();
-                if (line == null) {
-                    // Server connection was closed, try to reconnect
-                    Socket socket = new Socket(servers[i], ports[i]);
-                    readers[i] = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                } else {
-                    // Emit the data as a stream
-                    ctx.collect(line);
-                }
-            } catch (Exception e) {
-                // An error occurred, try to reconnect
-                Socket socket = new Socket(servers[i], ports[i]);
-                readers[i] = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                line = readers[i].readLine();
+            } catch (IOException e) {
+                log.warn("Error reading from reader {}", i, e);
+                line = null;
+            }
+
+            if (line == null) {
+                log.debug("Closing socket for broken connection with server {}", i);
+
+                readers[i].close();
+                sockets[i].close();
+
+                log.debug("Closed socket successfully for broken connection with server {}", i);
+
+                log.info("Trying to reconnect to server {}", i);
+
+                sockets[i] = new Socket(servers[i], ports[i]);
+                readers[i] = new BufferedReader(new InputStreamReader(sockets[i].getInputStream()));
+
+                log.info("Initialized socket and reader for server {}", i);
+            } else {
+                // Emit the data as a stream
+                ctx.collect(line);
             }
         }
     }
