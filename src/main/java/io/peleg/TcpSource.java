@@ -37,7 +37,7 @@ public class TcpSource extends RichParallelSourceFunction<String> {
         Socket[] sockets = new Socket[endIndex - startIndex];
         BufferedReader[] readers = new BufferedReader[endIndex - startIndex];
         for (int i = startIndex; i < endIndex; i++) {
-            sockets[i - startIndex] = new Socket(servers[i], ports[i]);
+            sockets[i - startIndex] = connect(servers[i], ports[i]);
             readers[i - startIndex] = new BufferedReader(new InputStreamReader(sockets[i - startIndex].getInputStream()));
         }
 
@@ -88,6 +88,23 @@ public class TcpSource extends RichParallelSourceFunction<String> {
                 ctx.collect(line);
             }
         }
+    }
+
+    private Socket connect(String server, int port) throws IOException {
+        log.info("Trying to connect to {}:{}", server, port);
+
+        Socket socket;
+
+        try {
+            socket = new Socket(server, port);
+        } catch (IOException e) {
+            log.error("Error connecting to " + server + ":" + port, e);
+            throw e;
+        }
+
+        log.info("Connected successfully to {}:{}", server, port);
+
+        return socket;
     }
 
     @Override
