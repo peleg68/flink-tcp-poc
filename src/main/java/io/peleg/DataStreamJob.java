@@ -28,23 +28,11 @@ public class DataStreamJob {
                 8004
         };
 
-        String outputPath = "out";
-
-        final FileSink<String> sink = FileSink
-                .forRowFormat(new Path(outputPath), new SimpleStringEncoder<String>("UTF-8"))
-                .withRollingPolicy(
-                        DefaultRollingPolicy.builder()
-                                .withRolloverInterval(Duration.ofSeconds(3))
-                                .withInactivityInterval(Duration.ofSeconds(5))
-                                .withMaxPartSize(MemorySize.ofMebiBytes(1))
-                                .build())
-                .build();
-
         env.setParallelism(servers.length);
 
         env.addSource(new TcpSource(servers, ports))
                 .filter(s -> Integer.parseInt(s) % 3 == 0)
-                .sinkTo(sink);
+                .print();
 
         env.execute("tcp-poc");
     }
