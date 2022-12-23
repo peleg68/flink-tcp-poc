@@ -18,17 +18,17 @@ public class DataStreamJob {
                 "localhost",
                 "localhost",
                 "localhost",
-                "localhost",
+                "localhost"
         };
 
         int[] ports = {
                 8001,
                 8002,
                 8003,
-                8004,
+                8004
         };
 
-        String outputPath = "./out"
+        String outputPath = "./out";
 
         final FileSink<String> sink = FileSink
                 .forRowFormat(new Path(outputPath), new SimpleStringEncoder<String>("UTF-8"))
@@ -41,8 +41,8 @@ public class DataStreamJob {
                 .build();
 
         env.addSource(new TcpSource(servers, ports))
-                .filter(s -> Integer.parseInt(s) % 3)
-                .addSink(sink);
+                .filter(s -> Integer.parseInt(s) % 3 == 0)
+                .sinkTo(sink);
 
         env.execute("tcp-poc");
     }
